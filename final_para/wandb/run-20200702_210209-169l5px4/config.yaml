@@ -1,0 +1,67 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.9.2
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.7.7
+adam_epsilon:
+  desc: null
+  value: 1.0e-08
+data_dir:
+  desc: null
+  value: data
+early_stop_callback:
+  desc: null
+  value: false
+eval_batch_size:
+  desc: null
+  value: 6
+fp_16:
+  desc: null
+  value: false
+gradient_accumulation_steps:
+  desc: null
+  value: 16
+learning_rate:
+  desc: null
+  value: 0.0003
+max_grad_norm:
+  desc: null
+  value: 1.0
+max_seq_length:
+  desc: null
+  value: 256
+model_name_or_path:
+  desc: null
+  value: t5-base
+n_gpu:
+  desc: null
+  value: 1
+num_train_epochs:
+  desc: null
+  value: 2
+opt_level:
+  desc: null
+  value: O1
+output_dir:
+  desc: null
+  value: t5_paraphrase_v2
+seed:
+  desc: null
+  value: 42
+tokenizer_name_or_path:
+  desc: null
+  value: t5-base
+train_batch_size:
+  desc: null
+  value: 6
+warmup_steps:
+  desc: null
+  value: 0
+weight_decay:
+  desc: null
+  value: 0.0

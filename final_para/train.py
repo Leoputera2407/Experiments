@@ -27,7 +27,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
-
+from pytorch_lightning.loggers import WandbLogger
 
 from transformers import (
     AdamW,
@@ -44,6 +44,8 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
 
 set_seed(42)
+
+wandb_logger = WandbLogger(name='version1',project='para')
 
 
 class T5FineTuner(pl.LightningModule):
@@ -136,7 +138,7 @@ class T5FineTuner(pl.LightningModule):
         return tqdm_dict
 
     def train_dataloader(self):
-        train_dataset = get_dataset(tokenizer=self.tokenizer, type_path="Quora_Paraphrasing_train", args=self.hparams)
+        train_dataset = get_dataset(tokenizer=self.tokenizer, type_path="Combined_train", args=self.hparams)
         dataloader = DataLoader(train_dataset, batch_size=self.hparams.train_batch_size, drop_last=True, shuffle=True,
                                 num_workers=4)
         t_total = (
@@ -151,7 +153,7 @@ class T5FineTuner(pl.LightningModule):
         return dataloader
 
     def val_dataloader(self):
-        val_dataset = get_dataset(tokenizer=self.tokenizer, type_path="Quora_Paraphrasing_val", args=self.hparams)
+        val_dataset = get_dataset(tokenizer=self.tokenizer, type_path="Combined_val", args=self.hparams)
         return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=4)
 
 logger = logging.getLogger(__name__)
@@ -301,7 +303,7 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 
 train_params = dict(
     accumulate_grad_batches=args.gradient_accumulation_steps,
-    gpus=args.n_gpu,
+    gpus=0,
     max_epochs=args.num_train_epochs,
     early_stop_callback=False,
     precision= 16 if args.fp_16 else 32,
@@ -309,6 +311,7 @@ train_params = dict(
     gradient_clip_val=args.max_grad_norm,
     checkpoint_callback=checkpoint_callback,
     callbacks=[LoggingCallback()],
+    logger = wandb_logger,
 )
 
 def get_dataset(tokenizer, type_path, args):
@@ -327,6 +330,6 @@ trainer.fit(model)
 print ("training finished")
 
 print ("Saving model")
-model.model.save_pretrained('t5_paraphrase')
+model.model.save_pretrained('t5_paraphrase_v2')
 
 print ("Saved model")

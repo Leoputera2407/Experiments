@@ -1,0 +1,4 @@
+{"train_loss": 5.9480390548706055, "epoch": 0, "global_step": 0, "_runtime": 60.919870138168335, "_timestamp": 1593723779.1232672, "_step": 0}
+{"train_loss": 4.167405128479004, "epoch": 0, "global_step": 0, "_runtime": 191.34491896629333, "_timestamp": 1593723909.548316, "_step": 1}
+{"train_loss": 3.7607529163360596, "epoch": 0, "global_step": 1, "_runtime": 3016.0017828941345, "_timestamp": 1593726734.20518, "_step": 2}
+{"train_loss": 5.546361923217773, "epoch": 0, "global_step": 1, "_runtime": 3170.5043489933014, "_timestamp": 1593726888.707746, "_step": 3}
