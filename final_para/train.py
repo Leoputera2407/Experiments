@@ -17,6 +17,7 @@ import random
 import re
 from itertools import chain
 from string import punctuation
+import wandb
 
 import nltk
 nltk.download('punkt')
@@ -88,13 +89,13 @@ class T5FineTuner(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss = self._step(batch)
 
-        tensorboard_logs = {"train_loss": loss}
-        return {"loss": loss, "log": tensorboard_logs}
+        logs = {"train_loss": loss}
+        return {"loss": loss, "log": logs}
 
     def training_epoch_end(self, outputs):
         avg_train_loss = torch.stack([x["loss"] for x in outputs]).mean()
-        tensorboard_logs = {"avg_train_loss": avg_train_loss}
-        return {"avg_train_loss": avg_train_loss, "log": tensorboard_logs, 'progress_bar': tensorboard_logs}
+        logs = {"avg_train_loss": avg_train_loss}
+        return {"avg_train_loss": avg_train_loss, "log": logs, 'progress_bar': logs}
 
     def validation_step(self, batch, batch_idx):
         loss = self._step(batch)
@@ -102,8 +103,8 @@ class T5FineTuner(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        tensorboard_logs = {"val_loss": avg_loss}
-        return {"avg_val_loss": avg_loss, "log": tensorboard_logs, 'progress_bar': tensorboard_logs}
+        logs = {"val_loss": avg_loss}
+        return {"avg_val_loss": avg_loss, "log": logs, 'progress_bar': logs}
 
     def configure_optimizers(self):
         "Prepare optimizer and schedule (linear warmup and decay)"
@@ -155,7 +156,7 @@ class T5FineTuner(pl.LightningModule):
     def val_dataloader(self):
         val_dataset = get_dataset(tokenizer=self.tokenizer, type_path="Combined_val", args=self.hparams)
         return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=4)
-
+        
 logger = logging.getLogger(__name__)
 
 class LoggingCallback(pl.Callback):
@@ -182,33 +183,6 @@ class LoggingCallback(pl.Callback):
             logger.info("{} = {}\n".format(key, str(metrics[key])))
             writer.write("{} = {}\n".format(key, str(metrics[key])))
 
-args_dict = dict(
-    data_dir="", # path for data files
-    output_dir="", # path to save the checkpoints
-    model_name_or_path='t5-base',
-    tokenizer_name_or_path='t5-base',
-    max_seq_length=512,
-    learning_rate=3e-4,
-    weight_decay=0.0,
-    adam_epsilon=1e-8,
-    warmup_steps=0,
-    train_batch_size=6,
-    eval_batch_size=6,
-    num_train_epochs=2,
-    gradient_accumulation_steps=16,
-    n_gpu=1,
-    early_stop_callback=False,
-    fp_16=False, # if you want to enable 16-bit training then install apex and set this to true
-    opt_level='O1', # https://nvidia.github.io/apex/amp.html#opt-levels-and-properties
-    max_grad_norm=1.0, # if you enable 16-bit training then set this to a sensible value, 0.5 is a good default
-    seed=42,
-)
-
-train_path = "data/Combined_train.txt"
-val_path = "data/Combined_val.txt"
-
-#train = pd.read_csv(train_path)
-#print (train.head())
 
 tokenizer = T5Tokenizer.from_pretrained('t5-base')
 
@@ -221,7 +195,7 @@ class ParaphraseDataset(Dataset):
         #self.target_column = "question2"
         #self.data = pd.read_csv(self.path)
         self.data = []
-        with open(self.path, 'r', encoding='utf8') as f:
+        with open(self.path, 'r', encoding='utf-8') as f:
             for row in f:
                 self.data.append(row)
         self.max_len = max_len
@@ -248,7 +222,7 @@ class ParaphraseDataset(Dataset):
             split_token = ' <equals> '
             input_ , target = sentences.split(split_token)
 
-            input_ = "paraphrase: " + input_ + ' </s'
+            input_ = "paraphrase: " + input_ + " </s>"
             target = target + " </s>"
 
             # tokenize inputs
@@ -268,9 +242,9 @@ class ParaphraseDataset(Dataset):
         for idx in range(len(self.data)):
             input_, target = self.data.loc[idx, self.source_column], self.data.loc[idx, self.target_column]
 
-            input_ = "paraphrase: "+ input_ + ' </s>'
+            input_ = "paraphrase: "+ input_ + " </s>"
             target = target + " </s>"
-
+            
             # tokenize inputs
             tokenized_inputs = self.tokenizer.batch_encode_plus(
                 [input_], max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
@@ -283,8 +257,36 @@ class ParaphraseDataset(Dataset):
             self.inputs.append(tokenized_inputs)
             self.targets.append(tokenized_targets)
 
+
+
+
 dataset = ParaphraseDataset(tokenizer, 'data', 'Combined_val', 256)
 print("Val dataset: ",len(dataset))
+
+args_dict = dict(
+    data_dir="data", # path for data files
+    output_dir="t5_paraphrase_v2", # path to save the checkpoints
+    model_name_or_path='t5-base',
+    tokenizer_name_or_path='t5-base',
+    max_seq_length=256,
+    learning_rate=3e-4,
+    weight_decay=0.0,
+    adam_epsilon=1e-8,
+    warmup_steps=0,
+    train_batch_size=6,
+    eval_batch_size=6,
+    num_train_epochs=2,
+    gradient_accumulation_steps=16,
+    n_gpu=1,
+    early_stop_callback=False,
+    fp_16=False, # if you want to enable 16-bit training then install apex and set this to true
+    opt_level='O1', # https://nvidia.github.io/apex/amp.html#opt-levels-and-properties
+    max_grad_norm=1.0, # if you enable 16-bit training then set this to a sensible value, 0.5 is a good default
+    seed=42,
+)
+
+train_path = "data/Combined_train.txt"
+val_path = "data/Combined_val.txt"
 
 data = dataset[61]
 print(tokenizer.decode(data['source_ids']))
@@ -293,7 +295,7 @@ print(tokenizer.decode(data['target_ids']))
 if not os.path.exists('t5_paraphrase_v2'):
     os.makedirs('t5_paraphrase_v2')
 
-args_dict.update({'data_dir': 'data', 'output_dir': 't5_paraphrase_v2', 'num_train_epochs':2,'max_seq_length':256})
+
 args = argparse.Namespace(**args_dict)
 print(args_dict)
 
