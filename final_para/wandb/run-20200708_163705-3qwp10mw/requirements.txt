@@ -91,7 +91,7 @@ ptyprocess==0.6.0
 pyasn1-modules==0.2.8
 pyasn1==0.4.8
 pyemd==0.5.1
-pygments==2.6.1
+pygments==2.7.4
 pymysql==0.9.3
 pyparsing==2.4.7
 pyphen==0.9.5
